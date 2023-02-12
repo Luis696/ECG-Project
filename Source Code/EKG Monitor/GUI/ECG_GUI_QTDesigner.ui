@@ -145,7 +145,7 @@
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_15">
              <item>
-              <widget class="PlotWidget" name="AF_ETCO2_Plot">
+              <widget class="PlotWidget" name="HeartratePlot">
                <property name="frameShape">
                 <enum>QFrame::NoFrame</enum>
                </property>
@@ -164,7 +164,7 @@
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_17">
              <item>
-              <widget class="PlotWidget" name="HeartratePlot">
+              <widget class="PlotWidget" name="AF_ETCO2_Plot">
                <property name="frameShape">
                 <enum>QFrame::NoFrame</enum>
                </property>
@@ -797,35 +797,47 @@ gridline-color: rgb(255, 255, 0);
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_3">
              <item>
-              <widget class="QCheckBox" name="checkBox_3">
+              <widget class="QCheckBox" name="heartrate_CheckBox">
                <property name="styleSheet">
                 <string notr="true">selection-color: rgb(255, 255, 255);
 selection-background-color: rgb(255, 255, 255);
 gridline-color: rgb(255, 255, 255);</string>
                </property>
                <property name="text">
-                <string>Check Box</string>
+                <string>enable heartrate</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QCheckBox" name="checkBox_2">
+              <widget class="QCheckBox" name="AF_CheckBox">
                <property name="text">
-                <string>CheckBox</string>
+                <string>enable AF</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QCheckBox" name="checkBox_7">
+              <widget class="QCheckBox" name="ETCO2_CheckBox">
                <property name="text">
-                <string>CheckBox</string>
+                <string>enable ETCO2</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QCheckBox" name="checkBox">
+              <widget class="QCheckBox" name="SPO2_CheckBox">
                <property name="text">
-                <string>CheckBox</string>
+                <string>enable SpO2</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
@@ -840,19 +852,69 @@ gridline-color: rgb(255, 255, 255);</string>
             <property name="frameShadow">
              <enum>QFrame::Raised</enum>
             </property>
-            <layout class="QVBoxLayout" name="verticalLayout_8">
+            <layout class="QHBoxLayout" name="horizontalLayout_7">
              <item>
-              <widget class="QSlider" name="horizontalSlider_2">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
+              <widget class="QFrame" name="frame_4">
+               <property name="frameShape">
+                <enum>QFrame::StyledPanel</enum>
                </property>
+               <property name="frameShadow">
+                <enum>QFrame::Raised</enum>
+               </property>
+               <layout class="QVBoxLayout" name="verticalLayout_8">
+                <item>
+                 <widget class="QSlider" name="x_Axis_Slider">
+                  <property name="font">
+                   <font>
+                    <underline>false</underline>
+                   </font>
+                  </property>
+                  <property name="minimum">
+                   <number>401</number>
+                  </property>
+                  <property name="maximum">
+                   <number>800</number>
+                  </property>
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                  <property name="tickPosition">
+                   <enum>QSlider::TicksAbove</enum>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QSlider" name="y_Axis_Slider">
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                  <property name="tickPosition">
+                   <enum>QSlider::TicksAbove</enum>
+                  </property>
+                  <property name="tickInterval">
+                   <number>1</number>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
               </widget>
              </item>
              <item>
-              <widget class="QSlider" name="horizontalSlider">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
+              <widget class="QFrame" name="frame_5">
+               <property name="frameShape">
+                <enum>QFrame::StyledPanel</enum>
                </property>
+               <property name="frameShadow">
+                <enum>QFrame::Raised</enum>
+               </property>
+               <layout class="QVBoxLayout" name="verticalLayout_18">
+                <item>
+                 <widget class="QLCDNumber" name="x_Axis_Slider_value"/>
+                </item>
+                <item>
+                 <widget class="QLCDNumber" name="y_Axis_Slider_value"/>
+                </item>
+               </layout>
               </widget>
              </item>
             </layout>

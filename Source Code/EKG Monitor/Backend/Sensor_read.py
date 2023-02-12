@@ -48,7 +48,7 @@ class SensorBoard(QObject):
                     signal.clear()  # clears signal vector after converting
                     read = False  # stop reading from serial Port, until called again
                     self.data_pipe_Plot.send(sensor_values)   # returns Value vector of size number_of_packages type float to
-                    self.data_pipe_Numberfield.send(sensor_values)
+                    self.data_pipe_Numberfield.send([0, 0, 0, 0])  # dummy Signal
 
 
 

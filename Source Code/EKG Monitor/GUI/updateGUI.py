@@ -60,9 +60,9 @@ class Ui_Build(Ui_MainWindow):
         self.Header = GUI_HEADER()
         self.Header_Thread = QThread()
         self.Header.moveToThread(self.Header_Thread)
-        self.Header.send_current_time_Signal.connect(self.Clock.setText, Qt.QueuedConnection)
-        self.Header.send_StopWatch_Signal.connect(self.Stopwatch.setText, Qt.QueuedConnection)
-        self.Header.send_date_Signal.connect(self.Date.setText, Qt.QueuedConnection)
+        self.Header.get_current_time_Signal.connect(self.Clock.setText, Qt.QueuedConnection)
+        self.Header.get_StopWatch_Signal.connect(self.Stopwatch.setText, Qt.QueuedConnection)
+        self.Header.get_date_Signal.connect(self.Date.setText, Qt.QueuedConnection)
         self.Header_Thread.started.connect(self.Header.update)
         self.Header_Thread.start()
 
@@ -70,10 +70,10 @@ class Ui_Build(Ui_MainWindow):
         self.NumberFields = GUI_NUMBERFIELDS(self.SensorBoard.serial_input_order)
         self.NumberFields_Thread = QThread()
         self.NumberFields.moveToThread(self.NumberFields_Thread)
-        self.NumberFields.send_AF_Signal.connect(self.AF_value.setText, Qt.QueuedConnection)
-        self.NumberFields.send_SPO2_Signal.connect(self.SPO2_value.setText, Qt.QueuedConnection)
-        self.NumberFields.send_ETCO2_Signal.connect(self.ETCO2_value.setText, Qt.QueuedConnection)
-        self.NumberFields.send_heartrate_Signal.connect(self.heartrate_value.setText, Qt.QueuedConnection)
+        self.NumberFields.get_AF_Signal.connect(self.AF_value.setText, Qt.QueuedConnection)
+        self.NumberFields.get_SPO2_Signal.connect(self.SPO2_value.setText, Qt.QueuedConnection)
+        self.NumberFields.get_ETCO2_Signal.connect(self.ETCO2_value.setText, Qt.QueuedConnection)
+        self.NumberFields.get_heartrate_Signal.connect(self.heartrate_value.setText, Qt.QueuedConnection)
         self.NumberFields_Thread.started.connect(self.NumberFields.update)
         self.NumberFields_Thread.start()
 
@@ -82,35 +82,60 @@ class Ui_Build(Ui_MainWindow):
         self.PlotFields_Thread = QThread()
         self.PlotFields.moveToThread(self.PlotFields_Thread)
 
-        # set x-Axis Range:
-        self.PlotFields.send_Plot_x_Range.connect(self.HeartratePlot.setXRange, Qt.QueuedConnection)
-        self.PlotFields.send_Plot_x_Range.connect(self.SPO2Plot.setXRange, Qt.QueuedConnection)
-        self.PlotFields.send_Plot_x_Range.connect(self.AF_ETCO2_Plot.setXRange, Qt.QueuedConnection)
-
         # connect Plot Signals:
-        self.PlotFields.send_heartratePlot_Signal.connect(self.heartrate_curve_back.setData, Qt.QueuedConnection)
-        self.PlotFields.send_heartratePlot_front_Signal.connect(self.heartrate_curve_front.setData, Qt.QueuedConnection)
+        self.PlotFields.get_heartratePlot_Signal.connect(self.heartrate_curve_back.setData, Qt.QueuedConnection)
+        self.PlotFields.get_heartratePlot_front_Signal.connect(self.heartrate_curve_front.setData, Qt.QueuedConnection)
 
-        self.PlotFields.send_AF_Plot_Signal.connect(self.AF_curve_back.setData, Qt.QueuedConnection)
-        self.PlotFields.send_AF_Plot_front_Signal.connect(self.AF_curve_front.setData, Qt.QueuedConnection)
-        # self.PlotFields.send_ETCO2_Plot_Signal.connect(self.ETCO2_curve_back.setData, Qt.QueuedConnection)
-        # self.PlotFields.send_ETCO2_Plot_front_Signal.connect(self.ETCO2_curve_front.setData, Qt.QueuedConnection)
+        self.PlotFields.get_AF_Plot_Signal.connect(self.AF_curve_back.setData, Qt.QueuedConnection)
+        self.PlotFields.get_AF_Plot_front_Signal.connect(self.AF_curve_front.setData, Qt.QueuedConnection)
+        # self.PlotFields.get_ETCO2_Plot_Signal.connect(self.ETCO2_curve_back.setData, Qt.QueuedConnection)
+        # self.PlotFields.get_ETCO2_Plot_front_Signal.connect(self.ETCO2_curve_front.setData, Qt.QueuedConnection)
 
-        self.PlotFields.send_SPO2Plot_Signal.connect(self.SPO2_curve_back.setData, Qt.QueuedConnection)
-        self.PlotFields.send_SPO2Plot_front_Signal.connect(self.SPO2_curve_front.setData, Qt.QueuedConnection)
+        self.PlotFields.get_SPO2Plot_Signal.connect(self.SPO2_curve_back.setData, Qt.QueuedConnection)
+        self.PlotFields.get_SPO2Plot_front_Signal.connect(self.SPO2_curve_front.setData, Qt.QueuedConnection)
 
-        self.PlotFields_Thread.started.connect(self.PlotFields.update)
+        self.PlotFields_Thread.started.connect(self.PlotFields.update_Plots)
         self.PlotFields_Thread.start()
+
+        # set x-Axis Range:
+        self.PlotFields.get_Plot_x_Range_Signal.connect(self.HeartratePlot.setXRange, Qt.QueuedConnection)
+        self.PlotFields.get_Plot_x_Range_Signal.connect(self.SPO2Plot.setXRange, Qt.QueuedConnection)
+        self.PlotFields.get_Plot_x_Range_Signal.connect(self.AF_ETCO2_Plot.setXRange, Qt.QueuedConnection)
+        # set y-Axis Range:
+        self.PlotFields.get_Plot_y_Range_Signal.connect(self.HeartratePlot.setYRange, Qt.QueuedConnection)
+        self.PlotFields.get_Plot_y_Range_Signal.connect(self.SPO2Plot.setYRange, Qt.QueuedConnection)
+        self.PlotFields.get_Plot_y_Range_Signal.connect(self.AF_ETCO2_Plot.setYRange, Qt.QueuedConnection)
+
+        # init Slider:
+        self.x_Axis_Slider.valueChanged.connect(self.update_PlotFields_x_axis, Qt.QueuedConnection)
+        self.x_Axis_Slider.valueChanged.connect(self.x_Axis_Slider_value.display, Qt.QueuedConnection)
+        self.x_Axis_Slider.valueChanged.connect(self.update_vector_length, Qt.QueuedConnection)
+
+        self.y_Axis_Slider.valueChanged.connect(self.update_PlotFields_y_axis, Qt.QueuedConnection)
+        self.y_Axis_Slider.valueChanged.connect(self.y_Axis_Slider_value.display, Qt.QueuedConnection)
+
+        # init CheckBoxes:
+        self.heartrate_CheckBox.stateChanged.connect(self.update_Heartrate_enabled)
+        self.SPO2_CheckBox.stateChanged.connect(self.update_SPO2_enabled)
+        self.AF_CheckBox.stateChanged.connect(self.update_AF_enabled)
+        self.ETCO2_CheckBox.stateChanged.connect(self.update_ETCO2_enabled)
 
         #
         QApplication.sendPostedEvents()
         QApplication.processEvents()
 
+    def update_PlotFields_x_axis(self, value): self.PlotFields.get_Plot_x_Range_Signal.emit(0, value)
+    def update_PlotFields_y_axis(self, value): self.PlotFields.get_Plot_y_Range_Signal.emit(-value, value)
+    def update_vector_length(self, value): self.PlotFields.update_vector_length(value)
+    def update_Heartrate_enabled(self, value): self.PlotFields.update_Heartrate_enabled(value)
+    def update_SPO2_enabled(self, value): self.PlotFields.update_SPO2_enabled(value)
+    def update_AF_enabled(self, value): self.PlotFields.update_AF_enabled(value)
+    def update_ETCO2_enabled(self, value): self.PlotFields.update_ETCO2_enabled(value)
 
 class GUI_HEADER(QObject):
-    send_current_time_Signal = pyqtSignal(str)  # init QThread Signal to send updated value for the Clock
-    send_StopWatch_Signal = pyqtSignal(str)  # init QThread Signal to send updated value for the StopWatch
-    send_date_Signal = pyqtSignal(str)  # init QThread Signal to send updated date to the GUI
+    get_current_time_Signal = pyqtSignal(str)  # init QThread Signal to send updated value for the Clock
+    get_StopWatch_Signal = pyqtSignal(str)  # init QThread Signal to send updated value for the StopWatch
+    get_date_Signal = pyqtSignal(str)  # init QThread Signal to send updated date to the GUI
 
     def __init__(self):
         super().__init__()
@@ -119,7 +144,7 @@ class GUI_HEADER(QObject):
 
     def update(self):
         # sends the date to the GUI
-        self.send_date_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ffffff;\">{date}</span></p></body></html>").format(date=self.time.now().date().today().strftime('%d.%m.%y')))
+        self.get_date_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ffffff;\">{date}</span></p></body></html>").format(date=self.time.now().date().today().strftime('%d.%m.%y')))
         while True: # init updating loop for the Clock and StopWatch of the GUI
             # Enable time convertion for stop watch:
             sec = time.time() - self.start_time
@@ -128,18 +153,18 @@ class GUI_HEADER(QObject):
             hours = mins // 60
             mins = mins % 60
             # sends current values for Clock and Stop watch to the GUI
-            self.send_current_time_Signal.emit(_translate("MainWindow", "<html><head/><body><p align=\"right\"><span style=\" color:#ffffff;\">{time}</span></p></body></html>".format(time=self.time.now().strftime("%H:%M:%S"))))
-            self.send_StopWatch_Signal.emit(_translate("MainWindow","<html><head/><body><p align=\"center\"><span style=\" color:#ffffff;\">{:0>2}:{:0>2}:{:0>2}</span></p></body></html>".format(int(hours), int(mins), int(sec))))
+            self.get_current_time_Signal.emit(_translate("MainWindow", "<html><head/><body><p align=\"right\"><span style=\" color:#ffffff;\">{time}</span></p></body></html>".format(time=self.time.now().strftime("%H:%M:%S"))))
+            self.get_StopWatch_Signal.emit(_translate("MainWindow", "<html><head/><body><p align=\"center\"><span style=\" color:#ffffff;\">{:0>2}:{:0>2}:{:0>2}</span></p></body></html>".format(int(hours), int(mins), int(sec))))
             QApplication.sendPostedEvents()
             QApplication.processEvents()
             QThread.msleep(500)  # ms
 
 
 class GUI_NUMBERFIELDS(QObject):
-    send_heartrate_Signal = pyqtSignal(str)
-    send_SPO2_Signal = pyqtSignal(str)
-    send_ETCO2_Signal = pyqtSignal(str)
-    send_AF_Signal = pyqtSignal(str)
+    get_heartrate_Signal = pyqtSignal(str)
+    get_SPO2_Signal = pyqtSignal(str)
+    get_ETCO2_Signal = pyqtSignal(str)
+    get_AF_Signal = pyqtSignal(str)
 
     def __init__(self, serial_input_order):
         super().__init__()
@@ -172,39 +197,39 @@ class GUI_NUMBERFIELDS(QObject):
             self.incoming_Data = pipe_recipient_Numberfields.recv()
 
             if self.Heartrate_enabled:
-                self.send_heartrate_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ff0000;\">{heartrate}</span></p></body></html>".format(heartrate=self.incoming_Data[self.Heartrate_index])))
+                self.get_heartrate_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ff0000;\">{heartrate}</span></p></body></html>".format(heartrate=self.incoming_Data[self.Heartrate_index])))
             else:
-                self.send_heartrate_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ff0000;\">--</span></p></body></html>"))
+                self.get_heartrate_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ff0000;\">--</span></p></body></html>"))
             if self.SPO2_enabled:
-                self.send_SPO2_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ffff00;\">{SPO2}</span></p></body></html>".format(SPO2=self.incoming_Data[self.SPO2_index])))
+                self.get_SPO2_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ffff00;\">{SPO2}</span></p></body></html>".format(SPO2=self.incoming_Data[self.SPO2_index])))
             else:
-                self.send_SPO2_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ffff00;\">--</span></p></body></html>"))
+                self.get_SPO2_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ffff00;\">--</span></p></body></html>"))
             if self.ETCO2_enabled:
-                self.send_AF_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#55ff7f;\">{AF}</span></p></body></html>".format(AF=self.incoming_Data[self.AF_index])))
+                self.get_AF_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#55ff7f;\">{AF}</span></p></body></html>".format(AF=self.incoming_Data[self.AF_index])))
             else:
-                self.send_AF_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#55ff7f;\">--</span></p></body></html>"))
+                self.get_AF_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#55ff7f;\">--</span></p></body></html>"))
             if self.AF_enabled:
-                self.send_ETCO2_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#0000ff;\">{ETCO2}</span></p></body></html>".format(ETCO2=self.incoming_Data[self.ETCO2_index])))
+                self.get_ETCO2_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#0000ff;\">{ETCO2}</span></p></body></html>".format(ETCO2=self.incoming_Data[self.ETCO2_index])))
             else:
-                self.send_ETCO2_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#0000ff;\">--</span></p></body></html>"))
+                self.get_ETCO2_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#0000ff;\">--</span></p></body></html>"))
 
 
 class GUI_PLOTS(QObject):
     # enable Plot Signals:
-    send_heartratePlot_Signal = pyqtSignal(np.ndarray, np.ndarray)
-    send_heartratePlot_front_Signal = pyqtSignal(np.ndarray, np.ndarray)
+    get_heartratePlot_Signal = pyqtSignal(np.ndarray, np.ndarray)
+    get_heartratePlot_front_Signal = pyqtSignal(np.ndarray, np.ndarray)
 
-    send_AF_Plot_Signal = pyqtSignal(np.ndarray, np.ndarray)
-    send_AF_Plot_front_Signal = pyqtSignal(np.ndarray, np.ndarray)
+    get_AF_Plot_Signal = pyqtSignal(np.ndarray, np.ndarray)
+    get_AF_Plot_front_Signal = pyqtSignal(np.ndarray, np.ndarray)
 
-    send_ETCO2_Plot_Signal = pyqtSignal(np.ndarray, np.ndarray)
-    send_ETCO2_Plot_front_Signal = pyqtSignal(np.ndarray, np.ndarray)
+    get_ETCO2_Plot_Signal = pyqtSignal(np.ndarray, np.ndarray)
+    get_ETCO2_Plot_front_Signal = pyqtSignal(np.ndarray, np.ndarray)
 
-    send_SPO2Plot_Signal = pyqtSignal(np.ndarray, np.ndarray)
-    send_SPO2Plot_front_Signal = pyqtSignal(np.ndarray, np.ndarray)
+    get_SPO2Plot_Signal = pyqtSignal(np.ndarray, np.ndarray)
+    get_SPO2Plot_front_Signal = pyqtSignal(np.ndarray, np.ndarray)
 
-    send_Plot_x_Range = pyqtSignal(int, int)
-    send_Plot_x_front_Signal = pyqtSignal(int, int)
+    get_Plot_x_Range_Signal = pyqtSignal(int, int)
+    get_Plot_y_Range_Signal = pyqtSignal(int, int)
 
     def __init__(self, serial_input_order):
         super().__init__()
@@ -214,7 +239,10 @@ class GUI_PLOTS(QObject):
         self.SPO2_Data_new = np.zeros(401)
         self.ETCO2_Data_new = np.zeros(401)
         self.AF_Data_new = np.zeros(401)
+        self.Test = np.zeros(10)
 
+        self.init_vector_length = 400
+        self.vector_length = self.init_vector_length
         # set x-axis:
         self.x_axis_Data = np.zeros(401)
         self.x_axis_Data = np.arange(0, 401, 1)  # x Data
@@ -240,9 +268,17 @@ class GUI_PLOTS(QObject):
             self.AF_index = self.serial_input_order.index("AF")
             self.AF_enabled = True
 
-    def update(self):
+    def update_vector_length(self, value):
+        self.vector_length = value
+
+    def update_Heartrate_enabled(self, value): self.Heartrate_enabled = value
+    def update_SPO2_enabled(self, value): self.SPO2_enabled = value
+    def update_ETCO2_enabled(self, value): self.ETCO2_enabled = value
+    def update_AF_enabled(self, value): self.AF_enabled = value
+
+    def update_Plots(self):
         while True:
-            if self.datapoint <= 400:
+            if self.datapoint <= self.vector_length-1:
                 # read input Data if enabled:
                 if self.Heartrate_enabled:
                     self.Heartrate_Data_new[self.datapoint] = pipe_recipient_PlotWidget.recv()[self.Heartrate_index]
@@ -255,29 +291,29 @@ class GUI_PLOTS(QObject):
                 if self.ETCO2_enabled:
                     self.ETCO2_Data_new[self.datapoint] = pipe_recipient_PlotWidget.recv()[self.ETCO2_index]
                 else:
-                    self.self.ETCO2_Data_new[self.datapoint] = 0
+                    self.ETCO2_Data_new[self.datapoint] = 0
                 if self.AF_enabled:
                     self.AF_Data_new[self.datapoint] = pipe_recipient_PlotWidget.recv()[self.AF_index]
                 else:
                     self.AF_Data_new[self.datapoint] = 0
-                # set new datapoint
-                self.datapoint += 1
+                if not(self.AF_enabled or self.SPO2_enabled or self.AF_enabled or self.ETCO2_enabled):
+                    time.sleep(0.01)  # if now data is displayed, update time would be too fast
+
+                self.datapoint += 1  # set new datapoint
             else:
                 self.datapoint = 0  # reset datapoint -> start plotting from beginning
 
-            self.send_heartratePlot_Signal.emit(self.x_axis_Data[0:self.datapoint], self.Heartrate_Data_new[0:self.datapoint])
-            self.send_heartratePlot_front_Signal.emit(self.x_axis_Data[self.datapoint + 2:-1], self.Heartrate_Data_new[self.datapoint + 2:-1])
+            self.get_heartratePlot_Signal.emit(self.x_axis_Data[0:self.datapoint], self.Heartrate_Data_new[0:self.datapoint])
+            self.get_heartratePlot_front_Signal.emit(self.x_axis_Data[self.datapoint + 2:-1], self.Heartrate_Data_new[self.datapoint + 2:-1])
 
-            self.send_AF_Plot_Signal.emit(self.x_axis_Data[0:self.datapoint], self.AF_Data_new[0:self.datapoint])
-            self.send_AF_Plot_front_Signal.emit(self.x_axis_Data[self.datapoint + 2:-1], self.AF_Data_new[self.datapoint + 2:-1])
+            self.get_AF_Plot_Signal.emit(self.x_axis_Data[0:self.datapoint], self.AF_Data_new[0:self.datapoint])
+            self.get_AF_Plot_front_Signal.emit(self.x_axis_Data[self.datapoint + 2:-1], self.AF_Data_new[self.datapoint + 2:-1])
 
-            self.send_SPO2Plot_Signal.emit(self.x_axis_Data[0:self.datapoint], self.SPO2_Data_new[0:self.datapoint])
-            self.send_SPO2Plot_front_Signal.emit(self.x_axis_Data[self.datapoint + 2:-1], self.SPO2_Data_new[self.datapoint + 2:-1])
+            self.get_SPO2Plot_Signal.emit(self.x_axis_Data[0:self.datapoint], self.SPO2_Data_new[0:self.datapoint])
+            self.get_SPO2Plot_front_Signal.emit(self.x_axis_Data[self.datapoint + 2:-1], self.SPO2_Data_new[self.datapoint + 2:-1])
 
-            self.send_ETCO2_Plot_Signal.emit(self.x_axis_Data[0:self.datapoint], self.ETCO2_Data_new[0:self.datapoint])
-            self.send_ETCO2_Plot_front_Signal.emit(self.x_axis_Data[self.datapoint + 2:-1], self.ETCO2_Data_new[self.datapoint + 2:-1])
-
-            self.send_Plot_x_Range.emit(0, 401)  # TODO: Why does it have to be in the Loop ?
+            self.get_ETCO2_Plot_Signal.emit(self.x_axis_Data[0:self.datapoint], self.ETCO2_Data_new[0:self.datapoint])
+            self.get_ETCO2_Plot_front_Signal.emit(self.x_axis_Data[self.datapoint + 2:-1], self.ETCO2_Data_new[self.datapoint + 2:-1])
 
 
 
