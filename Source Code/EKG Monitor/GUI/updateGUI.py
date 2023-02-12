@@ -233,20 +233,19 @@ class GUI_PLOTS(QObject):
 
     def __init__(self, serial_input_order):
         super().__init__()
-        self.serial_input_order = serial_input_order
+        self.serial_input_order = serial_input_order  # returns the Order of the incoming Data values
+        self.init_vector_length = 400  # sets initial length of the Data Arrays
+        self.vector_length = self.init_vector_length  # sets the default value for the Slider TODO: need to be changed if slider value is changed
         # generate start arrays for input data:
-        self.Heartrate_Data_new = np.zeros(401)
-        self.SPO2_Data_new = np.zeros(401)
-        self.ETCO2_Data_new = np.zeros(401)
-        self.AF_Data_new = np.zeros(401)
-        self.Test = np.zeros(10)
+        self.Heartrate_Data_new = np.zeros(self.init_vector_length)
+        self.SPO2_Data_new = np.zeros(self.init_vector_length)
+        self.ETCO2_Data_new = np.zeros(self.init_vector_length)
+        self.AF_Data_new = np.zeros(self.init_vector_length)
 
-        self.init_vector_length = 400
-        self.vector_length = self.init_vector_length
         # set x-axis:
-        self.x_axis_Data = np.zeros(401)
-        self.x_axis_Data = np.arange(0, 401, 1)  # x Data
-        self.datapoint = 200
+        self.x_axis_Data = np.zeros(self.init_vector_length)
+        self.x_axis_Data = np.arange(0, self.init_vector_length, 1)  # x Data
+        self.datapoint = int(self.init_vector_length/2)  # init start Position of first Value displayed in Plot, starts in middle of the Plot
 
         # set input data checks:
         self.Heartrate_enabled = False
@@ -268,17 +267,37 @@ class GUI_PLOTS(QObject):
             self.AF_index = self.serial_input_order.index("AF")
             self.AF_enabled = True
 
-    def update_vector_length(self, value):
+    def update_vector_length(self, value):  # TODO: relate to time displayed
+        """When Slider is used, this functions changes the length of the Arrays, which hold the Serial Data.
+        Length = Value of the Slider """
         self.vector_length = value
+        if value > self.Heartrate_Data_new.__len__():
+            self.Heartrate_Data_new = np.insert(self.Heartrate_Data_new[0:self.init_vector_length], -1, np.zeros(self.vector_length-self.init_vector_length))
+            self.SPO2_Data_new = np.insert(self.SPO2_Data_new[0:self.init_vector_length], -1, np.zeros(self.vector_length-self.init_vector_length))
+            self.AF_Data_new = np.insert(self.AF_Data_new[0:self.init_vector_length], -1, np.zeros(self.vector_length-self.init_vector_length))
+            self.ETCO2_Data_new = np.insert(self.ETCO2_Data_new[0:self.init_vector_length], -1, np.zeros(self.vector_length-self.init_vector_length))
+            self.x_axis_Data = np.arange(0, self.Heartrate_Data_new.__len__(), 1)
+            # time.sleep(0.05)
+        if value < self.Heartrate_Data_new.__len__():
+            self.SPO2_Data_new = self.SPO2_Data_new[0:self.vector_length]
+            self.AF_Data_new = self.AF_Data_new[0:self.vector_length]
+            self.ETCO2_Data_new = self.ETCO2_Data_new[0:self.vector_length]
+            self.Heartrate_Data_new = self.Heartrate_Data_new[0:self.vector_length]
+            self.x_axis_Data = np.arange(0, self.Heartrate_Data_new.__len__(), 1)
+
 
     def update_Heartrate_enabled(self, value): self.Heartrate_enabled = value
+    """disables and enables if the Heartrate plot is shown (related to CheckBoxes), origin: updateGUI"""
     def update_SPO2_enabled(self, value): self.SPO2_enabled = value
+    """disables and enables if the SPO2 plot is shown (related to CheckBoxes), origin: updateGUI"""
     def update_ETCO2_enabled(self, value): self.ETCO2_enabled = value
+    """disables and enables if the ETCO2 plot is shown (related to CheckBoxes), origin: updateGUI"""
     def update_AF_enabled(self, value): self.AF_enabled = value
-
+    """disables and enables if the AF plot is shown (related to CheckBoxes), origin: updateGUI"""
+    
     def update_Plots(self):
         while True:
-            if self.datapoint <= self.vector_length-1:
+            if self.datapoint < self.Heartrate_Data_new.__len__():
                 # read input Data if enabled:
                 if self.Heartrate_enabled:
                     self.Heartrate_Data_new[self.datapoint] = pipe_recipient_PlotWidget.recv()[self.Heartrate_index]
@@ -304,16 +323,16 @@ class GUI_PLOTS(QObject):
                 self.datapoint = 0  # reset datapoint -> start plotting from beginning
 
             self.get_heartratePlot_Signal.emit(self.x_axis_Data[0:self.datapoint], self.Heartrate_Data_new[0:self.datapoint])
-            self.get_heartratePlot_front_Signal.emit(self.x_axis_Data[self.datapoint + 2:-1], self.Heartrate_Data_new[self.datapoint + 2:-1])
+            self.get_heartratePlot_front_Signal.emit(self.x_axis_Data[self.datapoint + 1:-1], self.Heartrate_Data_new[self.datapoint + 1:-1])
 
             self.get_AF_Plot_Signal.emit(self.x_axis_Data[0:self.datapoint], self.AF_Data_new[0:self.datapoint])
-            self.get_AF_Plot_front_Signal.emit(self.x_axis_Data[self.datapoint + 2:-1], self.AF_Data_new[self.datapoint + 2:-1])
+            self.get_AF_Plot_front_Signal.emit(self.x_axis_Data[self.datapoint + 1:-1], self.AF_Data_new[self.datapoint + 1:-1])
 
             self.get_SPO2Plot_Signal.emit(self.x_axis_Data[0:self.datapoint], self.SPO2_Data_new[0:self.datapoint])
-            self.get_SPO2Plot_front_Signal.emit(self.x_axis_Data[self.datapoint + 2:-1], self.SPO2_Data_new[self.datapoint + 2:-1])
+            self.get_SPO2Plot_front_Signal.emit(self.x_axis_Data[self.datapoint + 1:-1], self.SPO2_Data_new[self.datapoint + 1:-1])
 
             self.get_ETCO2_Plot_Signal.emit(self.x_axis_Data[0:self.datapoint], self.ETCO2_Data_new[0:self.datapoint])
-            self.get_ETCO2_Plot_front_Signal.emit(self.x_axis_Data[self.datapoint + 2:-1], self.ETCO2_Data_new[self.datapoint + 2:-1])
+            self.get_ETCO2_Plot_front_Signal.emit(self.x_axis_Data[self.datapoint + 1:-1], self.ETCO2_Data_new[self.datapoint + 1:-1])
 
 
 
