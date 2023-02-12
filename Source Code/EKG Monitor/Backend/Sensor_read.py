@@ -14,12 +14,12 @@ class SensorBoard(QObject):
         self.baude_rate = int(baude_rate)
         self.num_sensors = num_sensors
         self.Serial_connection = serial.Serial(self.com_port, self.baude_rate, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
-        self.data_pipe_1 = object
-        self.data_pipe_2 = object
+        self.data_pipe_Plot = object
+        self.data_pipe_Numberfield = object
 
     def add_pipe(self, data_pipe_1, data_pipe_2):
-        self.data_pipe_1 = data_pipe_1
-        self.data_pipe_2 = data_pipe_2
+        self.data_pipe_Plot = data_pipe_1
+        self.data_pipe_Numberfield = data_pipe_2
 
     def set_serial_input_order(self, serial_input_order):
         self.serial_input_order = serial_input_order
@@ -30,7 +30,7 @@ class SensorBoard(QObject):
         print(f"Name: {self.name}")
         print(f"COM-Port:  {self.com_port}")
         print(f"Bauderate: {self.baude_rate}")
-        print(f"Number of Sensors enabled: {self.num_sensors}")  # TODO: Change to List of Sensor names
+        print(f"Sensors enabled: {self.serial_input_order}")
 
     def read_serial_data(self):  # TODO: Check for order of incoming values first
         """reads serial data from an arduino byte stream, each sensor sends it 4Byte Float after another
@@ -47,8 +47,8 @@ class SensorBoard(QObject):
                     sensor_values = [struct.unpack("f", bytes(signal[x]))[0] for x in range(0, self.num_sensors, 1)]
                     signal.clear()  # clears signal vector after converting
                     read = False  # stop reading from serial Port, until called again
-                    self.data_pipe_1.send(sensor_values)   # returns Value vector of size number_of_packages type float
-                    self.data_pipe_2.send(sensor_values)
+                    self.data_pipe_Plot.send(sensor_values)   # returns Value vector of size number_of_packages type float to
+                    self.data_pipe_Numberfield.send(sensor_values)
 
 
 

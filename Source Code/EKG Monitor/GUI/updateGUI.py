@@ -146,13 +146,8 @@ class GUI_NUMBERFIELDS(QObject):
         self.serial_input_order = serial_input_order
 
         # init Serial Input Signals
-        self.heartrate = np.zeros(21)
-        self.SPO2 = np.zeros(21)
-        self.AF = np.zeros(21)
-        self.ETCO2 = np.zeros(21)
-        self.wait_for_mean = 0
-
-        # set input data checks: # TODO: check if 20 ist good number of values for mean
+        self.incoming_Data = np.ndarray
+        # set input data checks:
         self.Heartrate_enabled = False
         self.SPO2_enabled = False
         self.AF_enabled = False
@@ -173,32 +168,26 @@ class GUI_NUMBERFIELDS(QObject):
             self.AF_enabled = True
 
     def update(self):
-        while True:  # TODO: Does a mean make sense ?
-            if self.wait_for_mean <= 20:
-                self.heartrate[self.wait_for_mean] = int(pipe_recipient_Numberfields.recv()[0])
-                self.SPO2[self.wait_for_mean] = int(pipe_recipient_Numberfields.recv()[0])
-                self.ETCO2[self.wait_for_mean] = int(pipe_recipient_Numberfields.recv()[0])
-                self.AF[self.wait_for_mean] = int(pipe_recipient_Numberfields.recv()[0])
-                self.wait_for_mean += 1
-            else:
+        while True:
+            self.incoming_Data = pipe_recipient_Numberfields.recv()
 
-                if self.Heartrate_enabled:
-                    self.send_heartrate_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ff0000;\">{heartrate}</span></p></body></html>".format(heartrate=int(np.mean(self.heartrate)))))
-                else:
-                    self.send_heartrate_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ff0000;\">--</span></p></body></html>"))
-                if self.SPO2_enabled:
-                    self.send_SPO2_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ffff00;\">{SPO2}</span></p></body></html>".format(SPO2=int(np.mean(self.SPO2)))))
-                else:
-                    self.send_SPO2_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ffff00;\">--</span></p></body></html>"))
-                if self.ETCO2_enabled:
-                    self.send_AF_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#55ff7f;\">{AF}</span></p></body></html>".format(AF=int(np.mean(self.AF)))))
-                else:
-                    self.send_AF_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#55ff7f;\">--</span></p></body></html>"))
-                if self.AF_enabled:
-                    self.send_ETCO2_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#0000ff;\">{ETCO2}</span></p></body></html>".format(ETCO2=int(np.mean(self.ETCO2)))))
-                else:
-                    self.send_ETCO2_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#0000ff;\">--</span></p></body></html>"))
-                self.wait_for_mean = 0
+            if self.Heartrate_enabled:
+                self.send_heartrate_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ff0000;\">{heartrate}</span></p></body></html>".format(heartrate=self.incoming_Data[self.Heartrate_index])))
+            else:
+                self.send_heartrate_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ff0000;\">--</span></p></body></html>"))
+            if self.SPO2_enabled:
+                self.send_SPO2_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ffff00;\">{SPO2}</span></p></body></html>".format(SPO2=self.incoming_Data[self.SPO2_index])))
+            else:
+                self.send_SPO2_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ffff00;\">--</span></p></body></html>"))
+            if self.ETCO2_enabled:
+                self.send_AF_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#55ff7f;\">{AF}</span></p></body></html>".format(AF=self.incoming_Data[self.AF_index])))
+            else:
+                self.send_AF_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#55ff7f;\">--</span></p></body></html>"))
+            if self.AF_enabled:
+                self.send_ETCO2_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#0000ff;\">{ETCO2}</span></p></body></html>".format(ETCO2=self.incoming_Data[self.ETCO2_index])))
+            else:
+                self.send_ETCO2_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#0000ff;\">--</span></p></body></html>"))
+
 
 class GUI_PLOTS(QObject):
     # enable Plot Signals:
