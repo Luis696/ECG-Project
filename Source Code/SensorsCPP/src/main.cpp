@@ -15,7 +15,6 @@ float Frequenz = 2*pi*1/50;
 
 void setup() {
     Serial.begin(115200);
-    Serial.println("Programm has uploaded successfully");
     Serial.flush();
 }
 
@@ -24,6 +23,7 @@ void loop() {
     cosinus = cos(Frequenz*t);
     sinus2 = sin(Frequenz*t);
     cosinus2 = cos(Frequenz*t+90);
+
     Serial.write(s,4);
     delay(10); // entspricht 100 Hz
     //Serial.write(c,4);

@@ -10,13 +10,14 @@ from multiprocessing import Process, Pipe
 
 from GUI.ECG_GUI_QTDesigner import Ui_MainWindow  # GUI main Class and File
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import QObject, QThread, pyqtSignal, Qt
+from PyQt5.QtCore import QObject, QThread, pyqtSignal, Qt, QTimer
 from PyQt5.QtWidgets import QDialog, QApplication
 
 
 # global Objects and variables:
 _translate = QtCore.QCoreApplication.translate
 pipe_sender, pipe_recipient = Pipe()  # activate global data Pipe to send Serial data to Threads
+pipe_send_configuration, pipe_recipient_configuration = Pipe()  # sends start configurations to all Threads
 
 
 class Ui_Build(Ui_MainWindow):
@@ -26,18 +27,34 @@ class Ui_Build(Ui_MainWindow):
 
         # enabling Serial Connection to Sensor Board:
         self.SensorBoard = SensorBoard  # gets properties of Sensor Board passed
-        # self.SensorBoard.data_pipe = pipe_sender  # define pipe entry point for the data
-        pipe_sender.send(20)  # TODO: Pass pipe over Function in SensorBoard ! -> Better than making a global variable acessable from outside
+        pipe_send_configuration.send(SensorBoard.serial_input_order)
+
+        self.SensorBoard.add_pipe(pipe_sender)
+
         # init Thread to read serial data:
         self.SerialData_Thread = QThread()
         self.SensorBoard.moveToThread(self.SerialData_Thread)
         self.SerialData_Thread.started.connect(self.SensorBoard.read_serial_data)
-
+        self.SerialData_Thread.start()
         # adding Plots into Graphics Widget: HeartratePlot,SPO2Plot,AF_ETCO2_Plot:
         self.heartrate_curve_back = pg.PlotDataItem()
         self.heartrate_curve_front = pg.PlotDataItem()
         self.HeartratePlot.addItem(self.heartrate_curve_back)
         self.HeartratePlot.addItem(self.heartrate_curve_front)
+
+        self.SPO2_curve_back = pg.PlotDataItem()
+        self.SPO2_curve_front = pg.PlotDataItem()
+        self.SPO2Plot.addItem(self.SPO2_curve_back)
+        self.SPO2Plot.addItem(self.SPO2_curve_front)
+
+        self.AF_curve_back = pg.PlotDataItem()
+        self.AF_curve_front = pg.PlotDataItem()
+        self.ETCO2_curve_back = pg.PlotDataItem()
+        self.ETCO2_curve_front = pg.PlotDataItem()
+        self.AF_ETCO2_Plot.addItem(self.AF_curve_back)
+        self.AF_ETCO2_Plot.addItem(self.AF_curve_front)
+        self.AF_ETCO2_Plot.addItem(self.ETCO2_curve_back)
+        self.AF_ETCO2_Plot.addItem(self.ETCO2_curve_front)
 
         # init Thread for to update the header
         self.Header = GUI_HEADER()
@@ -64,9 +81,24 @@ class Ui_Build(Ui_MainWindow):
         self.PlotFields = GUI_PLOTS()
         self.PlotFields_Thread = QThread()
         self.PlotFields.moveToThread(self.PlotFields_Thread)
+
+        # set x-Axis Range:
         self.PlotFields.send_Plot_x_Range.connect(self.HeartratePlot.setXRange, Qt.QueuedConnection)
+        self.PlotFields.send_Plot_x_Range.connect(self.SPO2Plot.setXRange, Qt.QueuedConnection)
+        self.PlotFields.send_Plot_x_Range.connect(self.AF_ETCO2_Plot.setXRange, Qt.QueuedConnection)
+
+        # connect Plot Signals:
         self.PlotFields.send_heartratePlot_Signal.connect(self.heartrate_curve_back.setData, Qt.QueuedConnection)
         self.PlotFields.send_heartratePlot_front_Signal.connect(self.heartrate_curve_front.setData, Qt.QueuedConnection)
+
+        self.PlotFields.send_AF_Plot_Signal.connect(self.AF_curve_back.setData, Qt.QueuedConnection)
+        self.PlotFields.send_AF_Plot_front_Signal.connect(self.AF_curve_front.setData, Qt.QueuedConnection)
+        # self.PlotFields.send_ETCO2_Plot_Signal.connect(self.ETCO2_curve_back.setData, Qt.QueuedConnection)
+        # self.PlotFields.send_ETCO2_Plot_front_Signal.connect(self.ETCO2_curve_front.setData, Qt.QueuedConnection)
+
+        self.PlotFields.send_SPO2Plot_Signal.connect(self.SPO2_curve_back.setData, Qt.QueuedConnection)
+        self.PlotFields.send_SPO2Plot_front_Signal.connect(self.SPO2_curve_front.setData, Qt.QueuedConnection)
+
         self.PlotFields_Thread.started.connect(self.PlotFields.update)
         self.PlotFields_Thread.start()
 
@@ -112,10 +144,12 @@ class GUI_NUMBERFIELDS(QObject):
     def __init__(self):
         super().__init__()
         self.y = 10
+        # find data index of Serial Input:
+        self.serial_input_order = pipe_recipient.recv()
 
     def update(self):
         while True:
-            self.y = pipe_recipient.recv()  # generates Test Signal
+            self.y = randint(80, 100)  # generates Test Signal
             self.send_heartrate_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ff0000;\">{heartrate}</span></p></body></html>".format(heartrate=self.y)))
             self.send_SPO2_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ffff00;\">{SPO2}</span></p></body></html>".format(SPO2=self.y)))
             self.send_AF_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#55ff7f;\">{AF}</span></p></body></html>".format(AF=self.y)))
@@ -124,32 +158,87 @@ class GUI_NUMBERFIELDS(QObject):
 
 
 class GUI_PLOTS(QObject):
-
+    # enable Plot Signals:
     send_heartratePlot_Signal = pyqtSignal(np.ndarray, np.ndarray)
     send_heartratePlot_front_Signal = pyqtSignal(np.ndarray, np.ndarray)
-    send_AF_ETCO2_Plot_Signal = pyqtSignal(np.ndarray)
-    send_SPO2Plot_Signal = pyqtSignal(np.ndarray)
+
+    send_AF_Plot_Signal = pyqtSignal(np.ndarray, np.ndarray)
+    send_AF_Plot_front_Signal = pyqtSignal(np.ndarray, np.ndarray)
+
+    send_ETCO2_Plot_Signal = pyqtSignal(np.ndarray, np.ndarray)
+    send_ETCO2_Plot_front_Signal = pyqtSignal(np.ndarray, np.ndarray)
+
+    send_SPO2Plot_Signal = pyqtSignal(np.ndarray, np.ndarray)
+    send_SPO2Plot_front_Signal = pyqtSignal(np.ndarray, np.ndarray)
+
     send_Plot_x_Range = pyqtSignal(int, int)
+    send_Plot_x_front_Signal = pyqtSignal(int, int)
 
     def __init__(self):
         super().__init__()
+        # generate start arrays for input data:
+        self.Heartrate_Data_new = np.zeros(401)
+        self.SPO2_Data_new = np.zeros(401)
+        self.ETCO2_Data_new = np.zeros(401)
+        self.AF_Data_new = np.zeros(401)
+
+        # set x-axis:
         self.x_axis_Data = np.zeros(401)
-        self.Heartrate_Data_new_y = np.zeros(401)
-        self.datapoint = 200
         self.x_axis_Data = np.arange(0, 401, 1)  # x Data
+        self.datapoint = 200
+
+        # set input data checks:
+        self.Heartrate_enabled = False
+        self.SPO2_enabled = False
+        self.AF_enabled = False
+        self.ETCO2_enabled = False
+
+        # Check, if Plot data is incoming and find data index of serial input:
+        self.serial_input_order = pipe_recipient_configuration.recv()
+        if "Heartrate" in self.serial_input_order:
+            self.Heartrate_index = self.serial_input_order.index("Heartrate")
+            self.Heartrate_enabled = True
+        if "SPO2" in self.serial_input_order:
+            self.SPO2 = self.serial_input_order.index("SPO2")
+            self.SPO2_enabled = True
+        if "ETCO2" in self.serial_input_order:
+            self.ETCO2 = self.serial_input_order.index("ETCO2")
+            self.ETCO2_enabled = True
+        if "AF" in self.serial_input_order:
+            self.AF = self.serial_input_order.index("AF")
+            self.AF_enabled = True
 
     def update(self):
         while True:
             if self.datapoint <= 400:
-                self.Heartrate_Data_new_y[self.datapoint] = 100*np.cos(self.datapoint/10)  # y-Data generate dummy Signal
+                # read input Data if enabled:
+                if self.Heartrate_enabled:
+                    self.Heartrate_Data_new[self.datapoint] = pipe_recipient.recv()[self.Heartrate_index]
+                if self.SPO2_enabled:
+                    self.SPO2_Data_new[self.datapoint] = pipe_recipient.recv()[self.SPO2]
+                if self.ETCO2_enabled:
+                    self.ETCO2_Data_new[self.datapoint] = pipe_recipient.recv()[self.ETCO2]
+                if self.AF_enabled:
+                    self.AF_Data_new[self.datapoint] = pipe_recipient.recv()[self.AF]
+                # set new datapoint
                 self.datapoint += 1
             else:
-                self.datapoint = 0
+                self.datapoint = 0  # reset datapoint -> start plotting from beginning
 
-            self.send_heartratePlot_Signal.emit(self.x_axis_Data[0:self.datapoint], self.Heartrate_Data_new_y[0:self.datapoint])
-            self.send_heartratePlot_front_Signal.emit(self.x_axis_Data[self.datapoint + 2:-1], self.Heartrate_Data_new_y[self.datapoint + 2:-1])
+            self.send_heartratePlot_Signal.emit(self.x_axis_Data[0:self.datapoint], self.Heartrate_Data_new[0:self.datapoint])
+            self.send_heartratePlot_front_Signal.emit(self.x_axis_Data[self.datapoint + 2:-1], self.Heartrate_Data_new[self.datapoint + 2:-1])
+
+            self.send_AF_Plot_Signal.emit(self.x_axis_Data[0:self.datapoint], self.AF_Data_new[0:self.datapoint])
+            self.send_AF_Plot_front_Signal.emit(self.x_axis_Data[self.datapoint + 2:-1], self.AF_Data_new[self.datapoint + 2:-1])
+
+            self.send_SPO2Plot_Signal.emit(self.x_axis_Data[0:self.datapoint], self.SPO2_Data_new[0:self.datapoint])
+            self.send_SPO2Plot_front_Signal.emit(self.x_axis_Data[self.datapoint + 2:-1], self.SPO2_Data_new[self.datapoint + 2:-1])
+
+            self.send_ETCO2_Plot_Signal.emit(self.x_axis_Data[0:self.datapoint], self.ETCO2_Data_new[0:self.datapoint])
+            self.send_ETCO2_Plot_front_Signal.emit(self.x_axis_Data[self.datapoint + 2:-1], self.ETCO2_Data_new[self.datapoint + 2:-1])
+
             self.send_Plot_x_Range.emit(0, 401)  # TODO: Why does it have to be in the Loop ?
-            QThread.msleep(10)  # refresh Time
+            # QThread.msleep(10)  # refresh Time
 
 
 
