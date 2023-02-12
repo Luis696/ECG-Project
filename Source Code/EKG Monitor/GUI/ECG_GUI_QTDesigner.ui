@@ -602,7 +602,7 @@
                   <property name="frameShadow">
                    <enum>QFrame::Raised</enum>
                   </property>
-                  <widget class="QProgressBar" name="SPO2_status_bar">
+                  <widget class="QProgressBar" name="SPO2_progress_bar">
                    <property name="geometry">
                     <rect>
                      <x>20</x>
@@ -725,12 +725,12 @@ gridline-color: rgb(255, 255, 0);
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_3">
           <item>
-           <widget class="QPushButton" name="pushButton">
+           <widget class="QPushButton" name="FreezeDisplay_Button">
             <property name="styleSheet">
              <string notr="true">background-color: rgb(255, 255, 255);</string>
             </property>
             <property name="text">
-             <string>PushButton</string>
+             <string>Frezze Display</string>
             </property>
            </widget>
           </item>
@@ -740,7 +740,7 @@ gridline-color: rgb(255, 255, 0);
              <string notr="true">background-color: rgb(255, 255, 255);</string>
             </property>
             <property name="text">
-             <string>PushButton</string>
+             <string>Capture</string>
             </property>
            </widget>
           </item>
@@ -750,7 +750,7 @@ gridline-color: rgb(255, 255, 0);
              <string notr="true">background-color: rgb(255, 255, 255);</string>
             </property>
             <property name="text">
-             <string>PushButton</string>
+             <string>Print Screenshot</string>
             </property>
            </widget>
           </item>

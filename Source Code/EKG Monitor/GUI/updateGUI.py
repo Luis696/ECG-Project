@@ -120,17 +120,21 @@ class Ui_Build(Ui_MainWindow):
         self.AF_CheckBox.stateChanged.connect(self.update_AF_enabled)
         self.ETCO2_CheckBox.stateChanged.connect(self.update_ETCO2_enabled)
 
+        # init progress bar of SPO2:
+        self.PlotFields.get_SPO2_Progress_Bar_Signal.connect(self.SPO2_progress_bar.setValue)
         #
         QApplication.sendPostedEvents()
         QApplication.processEvents()
 
     def update_PlotFields_x_axis(self, value): self.PlotFields.get_Plot_x_Range_Signal.emit(0, value)
-    def update_PlotFields_y_axis(self, value): self.PlotFields.get_Plot_y_Range_Signal.emit(-value, value)
+    def update_PlotFields_y_axis(self, value): self.PlotFields.get_Plot_y_Range_Signal.emit(-value, value)  # TODO: Does not work if Values are not the same range
     def update_vector_length(self, value): self.PlotFields.update_vector_length(value)
+
     def update_Heartrate_enabled(self, value): self.PlotFields.update_Heartrate_enabled(value)
     def update_SPO2_enabled(self, value): self.PlotFields.update_SPO2_enabled(value)
     def update_AF_enabled(self, value): self.PlotFields.update_AF_enabled(value)
     def update_ETCO2_enabled(self, value): self.PlotFields.update_ETCO2_enabled(value)
+
 
 class GUI_HEADER(QObject):
     get_current_time_Signal = pyqtSignal(str)  # init QThread Signal to send updated value for the Clock
@@ -231,6 +235,8 @@ class GUI_PLOTS(QObject):
     get_Plot_x_Range_Signal = pyqtSignal(int, int)
     get_Plot_y_Range_Signal = pyqtSignal(int, int)
 
+    get_SPO2_Progress_Bar_Signal = pyqtSignal(int)
+
     def __init__(self, serial_input_order):
         super().__init__()
         self.serial_input_order = serial_input_order  # returns the Order of the incoming Data values
@@ -294,10 +300,10 @@ class GUI_PLOTS(QObject):
     """disables and enables if the ETCO2 plot is shown (related to CheckBoxes), origin: updateGUI"""
     def update_AF_enabled(self, value): self.AF_enabled = value
     """disables and enables if the AF plot is shown (related to CheckBoxes), origin: updateGUI"""
-    
+
     def update_Plots(self):
         while True:
-            if self.datapoint < self.Heartrate_Data_new.__len__():
+            if self.datapoint < self.Heartrate_Data_new.__len__()-1:
                 # read input Data if enabled:
                 if self.Heartrate_enabled:
                     self.Heartrate_Data_new[self.datapoint] = pipe_recipient_PlotWidget.recv()[self.Heartrate_index]
@@ -334,7 +340,10 @@ class GUI_PLOTS(QObject):
             self.get_ETCO2_Plot_Signal.emit(self.x_axis_Data[0:self.datapoint], self.ETCO2_Data_new[0:self.datapoint])
             self.get_ETCO2_Plot_front_Signal.emit(self.x_axis_Data[self.datapoint + 1:-1], self.ETCO2_Data_new[self.datapoint + 1:-1])
 
+            self.get_SPO2_Progress_Bar_Signal.emit(int(self.SPO2_Data_new[self.datapoint-1]))
 
 
 
-
+ # TODO: Add Textbox in Plot, showing NO SIGNAL if Datastream is disabled or 0
+ # TODO: Add initial x-Axis scale, to get rid of the interruption at the end of the Plot
+ # TODO: Disable y-Axis scaling
