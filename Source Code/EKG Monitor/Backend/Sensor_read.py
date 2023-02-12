@@ -14,12 +14,12 @@ class SensorBoard(QObject):
         self.baude_rate = int(baude_rate)
         self.num_sensors = num_sensors
         self.Serial_connection = serial.Serial(self.com_port, self.baude_rate, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
-        self.data_pipe = object
+        self.data_pipe_1 = object
+        self.data_pipe_2 = object
 
-
-
-    def add_pipe(self, data_pipe):
-        self.data_pipe = data_pipe
+    def add_pipe(self, data_pipe_1, data_pipe_2):
+        self.data_pipe_1 = data_pipe_1
+        self.data_pipe_2 = data_pipe_2
 
     def set_serial_input_order(self, serial_input_order):
         self.serial_input_order = serial_input_order
@@ -47,8 +47,8 @@ class SensorBoard(QObject):
                     sensor_values = [struct.unpack("f", bytes(signal[x]))[0] for x in range(0, self.num_sensors, 1)]
                     signal.clear()  # clears signal vector after converting
                     read = False  # stop reading from serial Port, until called again
-                    self.data_pipe.send(sensor_values)   # returns Value vector of size number_of_packages type float
-
+                    self.data_pipe_1.send(sensor_values)   # returns Value vector of size number_of_packages type float
+                    self.data_pipe_2.send(sensor_values)
 
 
 

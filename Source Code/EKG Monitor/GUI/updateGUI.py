@@ -16,8 +16,9 @@ from PyQt5.QtWidgets import QDialog, QApplication
 
 # global Objects and variables:
 _translate = QtCore.QCoreApplication.translate
-pipe_sender, pipe_recipient = Pipe()  # activate global data Pipe to send Serial data to Threads
-pipe_send_configuration, pipe_recipient_configuration = Pipe()  # sends start configurations to all Threads
+pipe_sender_PlotWidget, pipe_recipient_PlotWidget = Pipe()  # activate global data Pipe to send Serial data to Plots
+pipe_sender_Numberfields, pipe_recipient_Numberfields = Pipe()  # activate global data Pipe to send Serial data to Numberfields
+
 
 
 class Ui_Build(Ui_MainWindow):
@@ -27,9 +28,8 @@ class Ui_Build(Ui_MainWindow):
 
         # enabling Serial Connection to Sensor Board:
         self.SensorBoard = SensorBoard  # gets properties of Sensor Board passed
-        pipe_send_configuration.send(SensorBoard.serial_input_order)
 
-        self.SensorBoard.add_pipe(pipe_sender)
+        self.SensorBoard.add_pipe(pipe_sender_PlotWidget, pipe_sender_Numberfields)
 
         # init Thread to read serial data:
         self.SerialData_Thread = QThread()
@@ -67,7 +67,7 @@ class Ui_Build(Ui_MainWindow):
         self.Header_Thread.start()
 
         # init Thread for the number fields:
-        self.NumberFields = GUI_NUMBERFIELDS()
+        self.NumberFields = GUI_NUMBERFIELDS(self.SensorBoard.serial_input_order)
         self.NumberFields_Thread = QThread()
         self.NumberFields.moveToThread(self.NumberFields_Thread)
         self.NumberFields.send_AF_Signal.connect(self.AF_value.setText, Qt.QueuedConnection)
@@ -78,7 +78,7 @@ class Ui_Build(Ui_MainWindow):
         self.NumberFields_Thread.start()
 
         # init Thread to update Plots:
-        self.PlotFields = GUI_PLOTS()
+        self.PlotFields = GUI_PLOTS(self.SensorBoard.serial_input_order)
         self.PlotFields_Thread = QThread()
         self.PlotFields.moveToThread(self.PlotFields_Thread)
 
@@ -141,21 +141,64 @@ class GUI_NUMBERFIELDS(QObject):
     send_ETCO2_Signal = pyqtSignal(str)
     send_AF_Signal = pyqtSignal(str)
 
-    def __init__(self):
+    def __init__(self, serial_input_order):
         super().__init__()
-        self.y = 10
-        # find data index of Serial Input:
-        self.serial_input_order = pipe_recipient.recv()
+        self.serial_input_order = serial_input_order
+
+        # init Serial Input Signals
+        self.heartrate = np.zeros(21)
+        self.SPO2 = np.zeros(21)
+        self.AF = np.zeros(21)
+        self.ETCO2 = np.zeros(21)
+        self.wait_for_mean = 0
+
+        # set input data checks: # TODO: check if 20 ist good number of values for mean
+        self.Heartrate_enabled = False
+        self.SPO2_enabled = False
+        self.AF_enabled = False
+        self.ETCO2_enabled = False
+        #
+        # Check, if Plot data is incoming and find data index of serial input:
+        if "Heartrate" in self.serial_input_order:
+            self.Heartrate_index = self.serial_input_order.index("Heartrate")
+            self.Heartrate_enabled = True
+        if "SPO2" in self.serial_input_order:
+            self.SPO2_index = self.serial_input_order.index("SPO2")
+            self.SPO2_enabled = True
+        if "ETCO2" in self.serial_input_order:
+            self.ETCO2_index = self.serial_input_order.index("ETCO2")
+            self.ETCO2_enabled = True
+        if "AF" in self.serial_input_order:
+            self.AF_index = self.serial_input_order.index("AF")
+            self.AF_enabled = True
 
     def update(self):
-        while True:
-            self.y = randint(80, 100)  # generates Test Signal
-            self.send_heartrate_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ff0000;\">{heartrate}</span></p></body></html>".format(heartrate=self.y)))
-            self.send_SPO2_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ffff00;\">{SPO2}</span></p></body></html>".format(SPO2=self.y)))
-            self.send_AF_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#55ff7f;\">{AF}</span></p></body></html>".format(AF=self.y)))
-            self.send_ETCO2_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#0000ff;\">{ETCO2}</span></p></body></html>".format(ETCO2=self.y)))
-            QThread.msleep(500)
+        while True:  # TODO: Does a mean make sense ?
+            if self.wait_for_mean <= 20:
+                self.heartrate[self.wait_for_mean] = int(pipe_recipient_Numberfields.recv()[0])
+                self.SPO2[self.wait_for_mean] = int(pipe_recipient_Numberfields.recv()[0])
+                self.ETCO2[self.wait_for_mean] = int(pipe_recipient_Numberfields.recv()[0])
+                self.AF[self.wait_for_mean] = int(pipe_recipient_Numberfields.recv()[0])
+                self.wait_for_mean += 1
+            else:
 
+                if self.Heartrate_enabled:
+                    self.send_heartrate_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ff0000;\">{heartrate}</span></p></body></html>".format(heartrate=int(np.mean(self.heartrate)))))
+                else:
+                    self.send_heartrate_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ff0000;\">--</span></p></body></html>"))
+                if self.SPO2_enabled:
+                    self.send_SPO2_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ffff00;\">{SPO2}</span></p></body></html>".format(SPO2=int(np.mean(self.SPO2)))))
+                else:
+                    self.send_SPO2_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ffff00;\">--</span></p></body></html>"))
+                if self.ETCO2_enabled:
+                    self.send_AF_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#55ff7f;\">{AF}</span></p></body></html>".format(AF=int(np.mean(self.AF)))))
+                else:
+                    self.send_AF_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#55ff7f;\">--</span></p></body></html>"))
+                if self.AF_enabled:
+                    self.send_ETCO2_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#0000ff;\">{ETCO2}</span></p></body></html>".format(ETCO2=int(np.mean(self.ETCO2)))))
+                else:
+                    self.send_ETCO2_Signal.emit(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#0000ff;\">--</span></p></body></html>"))
+                self.wait_for_mean = 0
 
 class GUI_PLOTS(QObject):
     # enable Plot Signals:
@@ -174,8 +217,9 @@ class GUI_PLOTS(QObject):
     send_Plot_x_Range = pyqtSignal(int, int)
     send_Plot_x_front_Signal = pyqtSignal(int, int)
 
-    def __init__(self):
+    def __init__(self, serial_input_order):
         super().__init__()
+        self.serial_input_order = serial_input_order
         # generate start arrays for input data:
         self.Heartrate_Data_new = np.zeros(401)
         self.SPO2_Data_new = np.zeros(401)
@@ -194,18 +238,17 @@ class GUI_PLOTS(QObject):
         self.ETCO2_enabled = False
 
         # Check, if Plot data is incoming and find data index of serial input:
-        self.serial_input_order = pipe_recipient_configuration.recv()
         if "Heartrate" in self.serial_input_order:
             self.Heartrate_index = self.serial_input_order.index("Heartrate")
             self.Heartrate_enabled = True
         if "SPO2" in self.serial_input_order:
-            self.SPO2 = self.serial_input_order.index("SPO2")
+            self.SPO2_index = self.serial_input_order.index("SPO2")
             self.SPO2_enabled = True
         if "ETCO2" in self.serial_input_order:
-            self.ETCO2 = self.serial_input_order.index("ETCO2")
+            self.ETCO2_index = self.serial_input_order.index("ETCO2")
             self.ETCO2_enabled = True
         if "AF" in self.serial_input_order:
-            self.AF = self.serial_input_order.index("AF")
+            self.AF_index = self.serial_input_order.index("AF")
             self.AF_enabled = True
 
     def update(self):
@@ -213,13 +256,21 @@ class GUI_PLOTS(QObject):
             if self.datapoint <= 400:
                 # read input Data if enabled:
                 if self.Heartrate_enabled:
-                    self.Heartrate_Data_new[self.datapoint] = pipe_recipient.recv()[self.Heartrate_index]
+                    self.Heartrate_Data_new[self.datapoint] = pipe_recipient_PlotWidget.recv()[self.Heartrate_index]
+                else:
+                    self.Heartrate_Data_new[self.datapoint] = 0  # TODO: change this routine
                 if self.SPO2_enabled:
-                    self.SPO2_Data_new[self.datapoint] = pipe_recipient.recv()[self.SPO2]
+                    self.SPO2_Data_new[self.datapoint] = pipe_recipient_PlotWidget.recv()[self.SPO2_index]
+                else:
+                    self.SPO2_Data_new[self.datapoint] = 0
                 if self.ETCO2_enabled:
-                    self.ETCO2_Data_new[self.datapoint] = pipe_recipient.recv()[self.ETCO2]
+                    self.ETCO2_Data_new[self.datapoint] = pipe_recipient_PlotWidget.recv()[self.ETCO2_index]
+                else:
+                    self.self.ETCO2_Data_new[self.datapoint] = 0
                 if self.AF_enabled:
-                    self.AF_Data_new[self.datapoint] = pipe_recipient.recv()[self.AF]
+                    self.AF_Data_new[self.datapoint] = pipe_recipient_PlotWidget.recv()[self.AF_index]
+                else:
+                    self.AF_Data_new[self.datapoint] = 0
                 # set new datapoint
                 self.datapoint += 1
             else:
@@ -238,7 +289,7 @@ class GUI_PLOTS(QObject):
             self.send_ETCO2_Plot_front_Signal.emit(self.x_axis_Data[self.datapoint + 2:-1], self.ETCO2_Data_new[self.datapoint + 2:-1])
 
             self.send_Plot_x_Range.emit(0, 401)  # TODO: Why does it have to be in the Loop ?
-            # QThread.msleep(10)  # refresh Time
+
 
 
 
