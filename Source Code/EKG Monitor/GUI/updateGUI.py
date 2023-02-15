@@ -242,6 +242,7 @@ class GUI_PLOTS(QObject):
         self.serial_input_order = serial_input_order  # returns the Order of the incoming Data values
         self.init_vector_length = 400  # sets initial length of the Data Arrays
         self.vector_length = self.init_vector_length  # sets the default value for the Slider TODO: need to be changed if slider value is changed
+        self.slider_used = False  # check if standard settings should be used, or slider settings for the axis
         # generate start arrays for input data:
         self.Heartrate_Data_new = np.zeros(self.init_vector_length)
         self.SPO2_Data_new = np.zeros(self.init_vector_length)
@@ -275,15 +276,17 @@ class GUI_PLOTS(QObject):
 
     def update_vector_length(self, value):  # TODO: relate to time displayed
         """When Slider is used, this functions changes the length of the Arrays, which hold the Serial Data.
-        Length = Value of the Slider """
+        Length = Value of the Slider and the length of the x-Axis shown """
         self.vector_length = value
+        self.slider_used = True  # disable standard x-axis settings and enables slider settings
+
         if value > self.Heartrate_Data_new.__len__():
             self.Heartrate_Data_new = np.insert(self.Heartrate_Data_new[0:self.init_vector_length], -1, np.zeros(self.vector_length-self.init_vector_length))
             self.SPO2_Data_new = np.insert(self.SPO2_Data_new[0:self.init_vector_length], -1, np.zeros(self.vector_length-self.init_vector_length))
             self.AF_Data_new = np.insert(self.AF_Data_new[0:self.init_vector_length], -1, np.zeros(self.vector_length-self.init_vector_length))
             self.ETCO2_Data_new = np.insert(self.ETCO2_Data_new[0:self.init_vector_length], -1, np.zeros(self.vector_length-self.init_vector_length))
             self.x_axis_Data = np.arange(0, self.Heartrate_Data_new.__len__(), 1)
-            # time.sleep(0.05)
+
         if value < self.Heartrate_Data_new.__len__():
             self.SPO2_Data_new = self.SPO2_Data_new[0:self.vector_length]
             self.AF_Data_new = self.AF_Data_new[0:self.vector_length]
@@ -291,6 +294,8 @@ class GUI_PLOTS(QObject):
             self.Heartrate_Data_new = self.Heartrate_Data_new[0:self.vector_length]
             self.x_axis_Data = np.arange(0, self.Heartrate_Data_new.__len__(), 1)
 
+        if self.vector_length <= self.datapoint:
+            self.datapoint = 0
 
     def update_Heartrate_enabled(self, value): self.Heartrate_enabled = value
     """disables and enables if the Heartrate plot is shown (related to CheckBoxes), origin: updateGUI"""
@@ -302,7 +307,11 @@ class GUI_PLOTS(QObject):
     """disables and enables if the AF plot is shown (related to CheckBoxes), origin: updateGUI"""
 
     def update_Plots(self):
+
         while True:
+            if not self.slider_used:
+                self.get_Plot_x_Range_Signal.emit(0, self.init_vector_length)  # if slider is not used, use standard setting
+
             if self.datapoint < self.Heartrate_Data_new.__len__()-1:
                 # read input Data if enabled:
                 if self.Heartrate_enabled:
@@ -345,5 +354,7 @@ class GUI_PLOTS(QObject):
 
 
  # TODO: Add Textbox in Plot, showing NO SIGNAL if Datastream is disabled or 0
- # TODO: Add initial x-Axis scale, to get rid of the interruption at the end of the Plot
+
  # TODO: Disable y-Axis scaling
+ # TODO: Disabel x-Axis values
+ # TODO: Enable milliseconds grid -> calulate values
