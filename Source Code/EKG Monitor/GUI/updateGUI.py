@@ -330,9 +330,7 @@ class GUI_PLOTS(QObject):
                     self.AF_Data_new[self.datapoint] = pipe_recipient_PlotWidget.recv()[self.AF_index]
                 else:
                     self.AF_Data_new[self.datapoint] = 0
-                if not(self.AF_enabled or self.SPO2_enabled or self.AF_enabled or self.ETCO2_enabled):
-                    time.sleep(0.01)  # if now data is displayed, update time would be too fast
-
+              
                 self.datapoint += 1  # set new datapoint
             else:
                 self.datapoint = 0  # reset datapoint -> start plotting from beginning
