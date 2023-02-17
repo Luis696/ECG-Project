@@ -38,6 +38,7 @@ class Ui_Build(Ui_MainWindow):
         self.SerialData_Thread.start()
         # adding Plots into Graphics Widget: HeartratePlot,SPO2Plot,AF_ETCO2_Plot:
         font = QFont("Calibri", 20) # setting up Font for textboxes in the plot
+        self.PlotLineWidth = 2  # setting Plot graphs line width
 
         self.heartrate_curve_back = pg.PlotDataItem()
         self.heartrate_curve_front = pg.PlotDataItem()
@@ -93,8 +94,7 @@ class Ui_Build(Ui_MainWindow):
         self.PlotFields_Thread = QThread()
         self.PlotFields.moveToThread(self.PlotFields_Thread)
 
-        # init all Plots:
-        self.PlotLineWidth = 3
+        # connecting all Plot elements to Signals:
         # heartrate plot:
         self.PlotFields.get_heartratePlot_Signal.connect(self.heartrate_curve_back.setData, Qt.QueuedConnection)
         self.PlotFields.get_heartratePlot_front_Signal.connect(self.heartrate_curve_front.setData, Qt.QueuedConnection)
@@ -372,6 +372,8 @@ class GUI_PLOTS(QObject):
                     self.AF_Data_new[self.datapoint] = 0
 
                 self.datapoint += 1  # set new datapoint
+                if not(self.AF_enabled and self.SPO2_enabled and self.ETCO2_enabled):
+                    time.sleep(0.01)
 
             else:
                 self.datapoint = 0  # reset datapoint -> start plotting from beginning
@@ -400,6 +402,6 @@ class GUI_PLOTS(QObject):
 
 
 
- # TODO: Why does the speed of the incoming Signal depends on the number of Plots activated ? 
+ # TODO: Why does the speed of the incoming Signal depends on the number of Plots activated ? Is also in master, with no Textbox
  # TODO: Disabel x-Axis values
  # TODO: Enable milliseconds grid -> calulate values
