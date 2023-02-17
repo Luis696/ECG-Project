@@ -12,7 +12,7 @@ from GUI.ECG_GUI_QTDesigner import Ui_MainWindow  # GUI main Class and File
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, Qt, QTimer
 from PyQt5.QtWidgets import QDialog, QApplication
-
+from PyQt5.QtGui import QFont
 
 # global Objects and variables:
 _translate = QtCore.QCoreApplication.translate
@@ -37,15 +37,23 @@ class Ui_Build(Ui_MainWindow):
         self.SerialData_Thread.started.connect(self.SensorBoard.read_serial_data)
         self.SerialData_Thread.start()
         # adding Plots into Graphics Widget: HeartratePlot,SPO2Plot,AF_ETCO2_Plot:
+        font = QFont("Calibri", 20) # setting up Font for textboxes in the plot
+
         self.heartrate_curve_back = pg.PlotDataItem()
         self.heartrate_curve_front = pg.PlotDataItem()
         self.HeartratePlot.addItem(self.heartrate_curve_back)
         self.HeartratePlot.addItem(self.heartrate_curve_front)
+        self.heartratePlotTextBox = pg.TextItem(color=(255, 0, 0), anchor=(0, 0))
+        self.heartratePlotTextBox.setFont(font)
+        self.HeartratePlot.addItem(self.heartratePlotTextBox)
 
         self.SPO2_curve_back = pg.PlotDataItem()
         self.SPO2_curve_front = pg.PlotDataItem()
         self.SPO2Plot.addItem(self.SPO2_curve_back)
         self.SPO2Plot.addItem(self.SPO2_curve_front)
+        self.SPO2PlotTextBox = pg.TextItem(color=(255, 0, 0), anchor=(0, 0))
+        self.SPO2PlotTextBox.setFont(font)
+        self.SPO2Plot.addItem(self.SPO2PlotTextBox)
 
         self.AF_curve_back = pg.PlotDataItem()
         self.AF_curve_front = pg.PlotDataItem()
@@ -55,6 +63,9 @@ class Ui_Build(Ui_MainWindow):
         self.AF_ETCO2_Plot.addItem(self.AF_curve_front)
         self.AF_ETCO2_Plot.addItem(self.ETCO2_curve_back)
         self.AF_ETCO2_Plot.addItem(self.ETCO2_curve_front)
+        self.AF_ETCO2_PlotTextBox = pg.TextItem(color=(255, 0, 0), anchor=(0, 0))
+        self.AF_ETCO2_PlotTextBox.setFont(font)
+        self.AF_ETCO2_Plot.addItem(self.AF_ETCO2_PlotTextBox)
 
         # init Thread for to update the header
         self.Header = GUI_HEADER()
@@ -82,17 +93,39 @@ class Ui_Build(Ui_MainWindow):
         self.PlotFields_Thread = QThread()
         self.PlotFields.moveToThread(self.PlotFields_Thread)
 
-        # connect Plot Signals:
+        # init all Plots:
+        self.PlotLineWidth = 3
+        # heartrate plot:
         self.PlotFields.get_heartratePlot_Signal.connect(self.heartrate_curve_back.setData, Qt.QueuedConnection)
         self.PlotFields.get_heartratePlot_front_Signal.connect(self.heartrate_curve_front.setData, Qt.QueuedConnection)
-
+        self.PlotFields.get_NoData__Warning__heartrate.connect(lambda: self.heartratePlotTextBox.setText("NO SIGNAL"))
+        self.PlotFields.get_NoData__Warning__heartrate.connect(self.heartratePlotTextBox.setPos)
+        self.PlotFields.get_NoData__Warning__heartrate.connect(lambda: self.heartrate_curve_front.setPen(pg.mkPen("r", width=self.PlotLineWidth)))
+        self.PlotFields.get_NoData__Warning__heartrate.connect(lambda: self.heartrate_curve_back.setPen(pg.mkPen("r", width=self.PlotLineWidth)))
+        self.PlotFields.get_heartratePlot_Signal.connect(lambda: self.heartrate_curve_front.setPen(pg.mkPen("y", width=self.PlotLineWidth)))
+        self.PlotFields.get_heartratePlot_Signal.connect(lambda: self.heartrate_curve_back.setPen(pg.mkPen("y", width=self.PlotLineWidth)))
+        self.PlotFields.get_heartratePlot_Signal.connect(lambda: self.heartratePlotTextBox.setText(""))
+        # AF & ETCO2 plot:
         self.PlotFields.get_AF_Plot_Signal.connect(self.AF_curve_back.setData, Qt.QueuedConnection)
         self.PlotFields.get_AF_Plot_front_Signal.connect(self.AF_curve_front.setData, Qt.QueuedConnection)
-        # self.PlotFields.get_ETCO2_Plot_Signal.connect(self.ETCO2_curve_back.setData, Qt.QueuedConnection)
-        # self.PlotFields.get_ETCO2_Plot_front_Signal.connect(self.ETCO2_curve_front.setData, Qt.QueuedConnection)
-
+        self.PlotFields.get_NoData__Warning__AF.connect(lambda: self.AF_ETCO2_PlotTextBox.setText("NO SIGNAL"))
+        self.PlotFields.get_NoData__Warning__AF.connect(self.AF_ETCO2_PlotTextBox.setPos)
+        self.PlotFields.get_NoData__Warning__AF.connect(lambda: self.AF_curve_back.setPen(pg.mkPen("r", width=self.PlotLineWidth)))
+        self.PlotFields.get_NoData__Warning__AF.connect(lambda: self.AF_curve_front.setPen(pg.mkPen("r", width=self.PlotLineWidth)))
+        self.PlotFields.get_AF_Plot_Signal.connect(lambda: self.AF_curve_front.setPen(pg.mkPen("y", width=self.PlotLineWidth)))
+        self.PlotFields.get_AF_Plot_Signal.connect(lambda: self.AF_curve_back.setPen(pg.mkPen("y", width=self.PlotLineWidth)))
+        self.PlotFields.get_AF_Plot_Signal.connect(lambda: self.AF_ETCO2_PlotTextBox.setText(""))
+        # SPO2Plot:
         self.PlotFields.get_SPO2Plot_Signal.connect(self.SPO2_curve_back.setData, Qt.QueuedConnection)
         self.PlotFields.get_SPO2Plot_front_Signal.connect(self.SPO2_curve_front.setData, Qt.QueuedConnection)
+        self.PlotFields.get_NoData__Warning__SPO2.connect(lambda: self.SPO2PlotTextBox.setText("NO SIGNAL"))
+        self.PlotFields.get_NoData__Warning__SPO2.connect(self.SPO2PlotTextBox.setPos)
+        self.PlotFields.get_NoData__Warning__SPO2.connect(lambda: self.SPO2_curve_back.setPen(pg.mkPen("r", width=self.PlotLineWidth)))
+        self.PlotFields.get_NoData__Warning__SPO2.connect(lambda: self.SPO2_curve_front.setPen(pg.mkPen("r", width=self.PlotLineWidth)))
+        self.PlotFields.get_SPO2Plot_Signal.connect(lambda: self.SPO2_curve_front.setPen(pg.mkPen("y", width=self.PlotLineWidth)))
+        self.PlotFields.get_SPO2Plot_Signal.connect(lambda: self.SPO2_curve_back.setPen(pg.mkPen("y", width=self.PlotLineWidth)))
+        self.PlotFields.get_SPO2Plot_Signal.connect(lambda: self.SPO2PlotTextBox.setText(""))
+
 
         self.PlotFields_Thread.started.connect(self.PlotFields.update_Plots)
         self.PlotFields_Thread.start()
@@ -226,9 +259,6 @@ class GUI_PLOTS(QObject):
     get_AF_Plot_Signal = pyqtSignal(np.ndarray, np.ndarray)
     get_AF_Plot_front_Signal = pyqtSignal(np.ndarray, np.ndarray)
 
-    get_ETCO2_Plot_Signal = pyqtSignal(np.ndarray, np.ndarray)
-    get_ETCO2_Plot_front_Signal = pyqtSignal(np.ndarray, np.ndarray)
-
     get_SPO2Plot_Signal = pyqtSignal(np.ndarray, np.ndarray)
     get_SPO2Plot_front_Signal = pyqtSignal(np.ndarray, np.ndarray)
 
@@ -236,6 +266,13 @@ class GUI_PLOTS(QObject):
     get_Plot_y_Range_Signal = pyqtSignal(int, int)
 
     get_SPO2_Progress_Bar_Signal = pyqtSignal(int)
+
+    get_NoData__Warning__heartrate = pyqtSignal(int, int)
+    get_NoData__Warning__SPO2 = pyqtSignal(int, int)
+    get_NoData__Warning__AF = pyqtSignal(int, int)
+
+
+
 
     def __init__(self, serial_input_order):
         super().__init__()
@@ -318,43 +355,51 @@ class GUI_PLOTS(QObject):
                     self.Heartrate_Data_new[self.datapoint] = pipe_recipient_PlotWidget.recv()[self.Heartrate_index]
                 else:
                     self.Heartrate_Data_new[self.datapoint] = 0  # TODO: change this routine
+
                 if self.SPO2_enabled:
                     self.SPO2_Data_new[self.datapoint] = pipe_recipient_PlotWidget.recv()[self.SPO2_index]
                 else:
                     self.SPO2_Data_new[self.datapoint] = 0
+
                 if self.ETCO2_enabled:
                     self.ETCO2_Data_new[self.datapoint] = pipe_recipient_PlotWidget.recv()[self.ETCO2_index]
                 else:
                     self.ETCO2_Data_new[self.datapoint] = 0
+
                 if self.AF_enabled:
                     self.AF_Data_new[self.datapoint] = pipe_recipient_PlotWidget.recv()[self.AF_index]
                 else:
                     self.AF_Data_new[self.datapoint] = 0
-                if not(self.AF_enabled or self.SPO2_enabled or self.AF_enabled or self.ETCO2_enabled):
-                    time.sleep(0.01)  # if now data is displayed, update time would be too fast
 
                 self.datapoint += 1  # set new datapoint
+
             else:
                 self.datapoint = 0  # reset datapoint -> start plotting from beginning
 
-            self.get_heartratePlot_Signal.emit(self.x_axis_Data[0:self.datapoint], self.Heartrate_Data_new[0:self.datapoint])
-            self.get_heartratePlot_front_Signal.emit(self.x_axis_Data[self.datapoint + 1:-1], self.Heartrate_Data_new[self.datapoint + 1:-1])
+            if all(Data == 0 for Data in self.Heartrate_Data_new):
+                self.get_NoData__Warning__heartrate.emit(np.round(self.Heartrate_Data_new.__len__()/2), 1)
+            else:
+                self.get_heartratePlot_Signal.emit(self.x_axis_Data[0:self.datapoint],self.Heartrate_Data_new[0:self.datapoint])
+                self.get_heartratePlot_front_Signal.emit(self.x_axis_Data[self.datapoint + 1:-1], self.Heartrate_Data_new[self.datapoint + 1:-1])
 
-            self.get_AF_Plot_Signal.emit(self.x_axis_Data[0:self.datapoint], self.AF_Data_new[0:self.datapoint])
-            self.get_AF_Plot_front_Signal.emit(self.x_axis_Data[self.datapoint + 1:-1], self.AF_Data_new[self.datapoint + 1:-1])
+            if all(Data == 0 for Data in self.SPO2_Data_new):
+                self.get_NoData__Warning__SPO2.emit(np.round(self.SPO2_Data_new.__len__()/2), 1)
+            else:
+                self.get_SPO2Plot_Signal.emit(self.x_axis_Data[0:self.datapoint], self.SPO2_Data_new[0:self.datapoint])
+                self.get_SPO2Plot_front_Signal.emit(self.x_axis_Data[self.datapoint + 1:-1], self.SPO2_Data_new[self.datapoint + 1:-1])
 
-            self.get_SPO2Plot_Signal.emit(self.x_axis_Data[0:self.datapoint], self.SPO2_Data_new[0:self.datapoint])
-            self.get_SPO2Plot_front_Signal.emit(self.x_axis_Data[self.datapoint + 1:-1], self.SPO2_Data_new[self.datapoint + 1:-1])
-
-            self.get_ETCO2_Plot_Signal.emit(self.x_axis_Data[0:self.datapoint], self.ETCO2_Data_new[0:self.datapoint])
-            self.get_ETCO2_Plot_front_Signal.emit(self.x_axis_Data[self.datapoint + 1:-1], self.ETCO2_Data_new[self.datapoint + 1:-1])
+            if all(Data == 0 for Data in self.AF_Data_new):
+                self.get_NoData__Warning__AF.emit(np.round(self.ETCO2_Data_new.__len__() / 2), 1)
+            else:
+                self.get_AF_Plot_Signal.emit(self.x_axis_Data[0:self.datapoint], self.AF_Data_new[0:self.datapoint])
+                self.get_AF_Plot_front_Signal.emit(self.x_axis_Data[self.datapoint + 1:-1], self.AF_Data_new[self.datapoint + 1:-1])
 
             self.get_SPO2_Progress_Bar_Signal.emit(int(self.SPO2_Data_new[self.datapoint-1]))
 
 
 
- # TODO: Add Textbox in Plot, showing NO SIGNAL if Datastream is disabled or 0
 
- # TODO: Disable y-Axis scaling
+
+ # TODO: Why does the speed of the incoming Signal depends on the number of Plots activated ? 
  # TODO: Disabel x-Axis values
  # TODO: Enable milliseconds grid -> calulate values
