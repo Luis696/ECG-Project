@@ -1,9 +1,6 @@
-
 import struct
 import serial
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, Qt
-from multiprocessing import Process, Pipe
-
 
 
 class SensorBoard(QObject):
@@ -47,8 +44,7 @@ class SensorBoard(QObject):
                     sensor_values = [struct.unpack("f", bytes(signal[x]))[0] for x in range(0, self.num_sensors, 1)]
                     signal.clear()  # clears signal vector after converting
                     read = False  # stop reading from serial Port, until called again
+                    # TODO: check if this is point were latecy comes from , single pipe for every Signal ?
                     self.data_pipe_Plot.send(sensor_values)   # returns Value vector of size number_of_packages type float to
                     self.data_pipe_Numberfield.send([0, 0, 0, 0])  # dummy Signal
-
-
 
