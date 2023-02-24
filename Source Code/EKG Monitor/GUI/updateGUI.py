@@ -14,11 +14,11 @@ from PyQt5.QtCore import QObject, QThread, pyqtSignal, Qt, QTimer
 from PyQt5.QtWidgets import QDialog, QApplication
 from PyQt5.QtGui import QFont
 
+from Backend.digitalFilter import *
 # global Objects and variables:
 _translate = QtCore.QCoreApplication.translate
 pipe_sender_PlotWidget, pipe_recipient_PlotWidget = Pipe()  # activate global data Pipe to send Serial data to Plots
 pipe_sender_Numberfields, pipe_recipient_Numberfields = Pipe()  # activate global data Pipe to send Serial data to Numberfields
-
 
 
 class Ui_Build(Ui_MainWindow):
@@ -271,9 +271,6 @@ class GUI_PLOTS(QObject):
     get_NoData__Warning__SPO2 = pyqtSignal(int, int)
     get_NoData__Warning__AF = pyqtSignal(int, int)
 
-
-
-
     def __init__(self, serial_input_order):
         super().__init__()
         self.serial_input_order = serial_input_order  # returns the Order of the incoming Data values
@@ -310,6 +307,15 @@ class GUI_PLOTS(QObject):
         if "AF" in self.serial_input_order:
             self.AF_index = self.serial_input_order.index("AF")
             self.AF_enabled = True
+
+        # init Filter TODO: implement multiple Filter
+        # Butterworth low-pass filter with frequency cutoff at 2.5 Hz
+        b, a = scipy.signal.iirfilter(4, Wn=2.5, fs=30, btype="low", ftype="butter")
+
+        self.heartrateFilter = LiveFilter(b, a)
+        self.SPO2Filter = LiveFilter(b, a)
+        self.AFFilter = LiveFilter(b, a)
+        self.ETCO2Filter = LiveFilter(b, a)
 
     def update_vector_length(self, value):  # TODO: relate to time displayed
         """When Slider is used, this functions changes the length of the Arrays, which hold the Serial Data.
@@ -352,7 +358,7 @@ class GUI_PLOTS(QObject):
             if self.datapoint < self.Heartrate_Data_new.__len__()-1:
                 # read input Data if enabled:
                 if self.Heartrate_enabled:
-                    self.Heartrate_Data_new[self.datapoint] = pipe_recipient_PlotWidget.recv()[self.Heartrate_index]
+                    self.Heartrate_Data_new[self.datapoint] = self.heartrateFilter(pipe_recipient_PlotWidget.recv()[self.Heartrate_index])
                 else:
                     self.Heartrate_Data_new[self.datapoint] = 0  # TODO: change this routine
 

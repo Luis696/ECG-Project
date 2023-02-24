@@ -5,7 +5,7 @@ from collections import deque  # import queue for LiveFilter
 import matplotlib.pyplot as plt
 
 
-class LiveFilter:
+class LiveMainFilter:
     """Base class for live filters.
     """
     def process(self, x):
@@ -22,7 +22,7 @@ class LiveFilter:
         raise NotImplementedError("Derived class must implement _process")
 
 
-class LiveLFilter(LiveFilter):
+class LiveFilter(LiveMainFilter):
     def __init__(self, b, a):
         """Initialize live filter based on difference equation.
 
@@ -46,28 +46,30 @@ class LiveLFilter(LiveFilter):
         return y
 
 
-np.random.seed(42)  # for reproducibility
-# create time steps and corresponding sine wave with Gaussian noise
-fs = 30  # sampling rate, Hz
-ts = np.arange(0, 5, 1.0 / fs)  # time vector - 5 seconds
+""" Example Code with "static" Signal: """
 
-ys = np.sin(2*np.pi * 1.0 * ts)  # signal @ 1.0 Hz, without noise
-yerr = 0.5 * np.random.normal(size=len(ts))  # Gaussian noise
-yraw = ys + yerr
-
-# Butterworth low-pass filter with frequency cutoff at 2.5 Hz
-b, a = scipy.signal.iirfilter(4, Wn=2.5, fs=30, btype="low", ftype="butter")
-live_lfilter = LiveLFilter(b, a)
-# simulate live filter - passing values one by one
-y_live_lfilter = [live_lfilter(y) for y in yraw]
-
-
-plt.figure(figsize=[6.4, 2.4])
-plt.plot(ts, yraw, label="Noisy signal")
-plt.plot(ts, y_live_lfilter, lw=4, ls="dashed", label="LiveLFilter")
-plt.legend(loc="lower center", bbox_to_anchor=[0.5, 1], ncol=3, fontsize="smaller")
-plt.xlabel("Time / s")
-plt.ylabel("Amplitude")
-plt.tight_layout()
-plt.show()
+# np.random.seed(42)  # for reproducibility
+# # create time steps and corresponding sine wave with Gaussian noise
+# fs = 30  # sampling rate, Hz
+# ts = np.arange(0, 5, 1.0 / fs)  # time vector - 5 seconds
+#
+# ys = np.sin(2*np.pi * 1.0 * ts)  # signal @ 1.0 Hz, without noise
+# yerr = 0.5 * np.random.normal(size=len(ts))  # Gaussian noise
+# yraw = ys + yerr
+#
+# # Butterworth low-pass filter with frequency cutoff at 2.5 Hz
+# b, a = scipy.signal.iirfilter(4, Wn=2.5, fs=30, btype="low", ftype="butter")
+# live_lfilter = LiveLFilter(b, a)
+# # simulate live filter - passing values one by one
+# y_live_lfilter = [live_lfilter(y) for y in yraw]
+#
+#
+# plt.figure(figsize=[6.4, 2.4])
+# plt.plot(ts, yraw, label="Noisy signal")
+# plt.plot(ts, y_live_lfilter, lw=4, ls="dashed", label="LiveLFilter")
+# plt.legend(loc="lower center", bbox_to_anchor=[0.5, 1], ncol=3, fontsize="smaller")
+# plt.xlabel("Time / s")
+# plt.ylabel("Amplitude")
+# plt.tight_layout()
+# plt.show()
 
