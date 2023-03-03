@@ -310,7 +310,14 @@ class GUI_PLOTS(QObject):
 
         # init Filter TODO: implement multiple Filter
         # Butterworth low-pass filter with frequency cutoff at 2.5 Hz
-        b, a = scipy.signal.iirfilter(4, Wn=2.5, fs=30, btype="low", ftype="butter")
+        self.sampling_Frequency_Signal = 200  # Hz
+        # Tiefpassfilter 40Hz:
+        ba, aa = scipy.signal.iirfilter(4, Wn=80, fs=self.sampling_Frequency_Signal, btype="low", ftype="butter")
+        # Notchfilter 50Hz:
+        # scipy.signal.iirnotch(w0 = filterd Frequency, Q= Qualitiy factor, fs=sampling frequency)
+        b, a = scipy.signal.iirnotch(w0=10, Q=1, fs=self.sampling_Frequency_Signal)
+        # Hochpassfilter 1 Hz:
+        bh, ah = scipy.signal.iirfilter(4, Wn=1, fs=self.sampling_Frequency_Signal, btype="high", ftype="butter")
 
         self.heartrateFilter = LiveFilter(b, a)
         self.SPO2Filter = LiveFilter(b, a)
@@ -358,7 +365,7 @@ class GUI_PLOTS(QObject):
             if self.datapoint < self.Heartrate_Data_new.__len__()-1:
                 # read input Data if enabled:
                 if self.Heartrate_enabled:
-                    self.Heartrate_Data_new[self.datapoint] = self.heartrateFilter(pipe_recipient_PlotWidget.recv()[self.Heartrate_index])
+                    self.Heartrate_Data_new[self.datapoint] = pipe_recipient_PlotWidget.recv()[self.Heartrate_index]
                 else:
                     self.Heartrate_Data_new[self.datapoint] = 0  # TODO: change this routine
 
@@ -378,7 +385,7 @@ class GUI_PLOTS(QObject):
                     self.AF_Data_new[self.datapoint] = 0
 
                 self.datapoint += 1  # set new datapoint
-                if not(self.AF_enabled and self.SPO2_enabled and self.ETCO2_enabled):
+                if not(self.AF_enabled and self.SPO2_enabled and self.ETCO2_enabled and self.Heartrate_enabled):
                     time.sleep(0.01)
 
             else:
