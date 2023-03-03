@@ -7,8 +7,8 @@ from Backend.Sensor_read import SensorBoard
 from multiprocessing import Process, Pipe
 
 os.system("pyuic5 -x GUI/ECG_GUI_QTDesigner.ui -o GUI/ECG_GUI_QTDesigner.py")
-SensorBoard = SensorBoard(name="ESP32", com_port="COM4", baude_rate=115200, num_sensors=4)
-SensorBoard.set_serial_input_order(["Heartrate", "SPO2", "ETCO2", "AF"])
+SensorBoard = SensorBoard(name="ESP32", com_port="COM4", baude_rate=115200, num_sensors=1)
+SensorBoard.set_serial_input_order(["Heartrate"])
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)  # defines QT Application as app

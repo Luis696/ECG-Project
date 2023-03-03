@@ -14,11 +14,11 @@ from PyQt5.QtCore import QObject, QThread, pyqtSignal, Qt, QTimer
 from PyQt5.QtWidgets import QDialog, QApplication
 from PyQt5.QtGui import QFont
 
+from Backend.digitalFilter import *
 # global Objects and variables:
 _translate = QtCore.QCoreApplication.translate
 pipe_sender_PlotWidget, pipe_recipient_PlotWidget = Pipe()  # activate global data Pipe to send Serial data to Plots
 pipe_sender_Numberfields, pipe_recipient_Numberfields = Pipe()  # activate global data Pipe to send Serial data to Numberfields
-
 
 
 class Ui_Build(Ui_MainWindow):
@@ -271,9 +271,6 @@ class GUI_PLOTS(QObject):
     get_NoData__Warning__SPO2 = pyqtSignal(int, int)
     get_NoData__Warning__AF = pyqtSignal(int, int)
 
-
-
-
     def __init__(self, serial_input_order):
         super().__init__()
         self.serial_input_order = serial_input_order  # returns the Order of the incoming Data values
@@ -310,6 +307,22 @@ class GUI_PLOTS(QObject):
         if "AF" in self.serial_input_order:
             self.AF_index = self.serial_input_order.index("AF")
             self.AF_enabled = True
+
+        # init Filter TODO: implement multiple Filter
+        # Butterworth low-pass filter with frequency cutoff at 2.5 Hz
+        self.sampling_Frequency_Signal = 200  # Hz
+        # Tiefpassfilter 40Hz:
+        ba, aa = scipy.signal.iirfilter(4, Wn=80, fs=self.sampling_Frequency_Signal, btype="low", ftype="butter")
+        # Notchfilter 50Hz:
+        # scipy.signal.iirnotch(w0 = filterd Frequency, Q= Qualitiy factor, fs=sampling frequency)
+        b, a = scipy.signal.iirnotch(w0=10, Q=1, fs=self.sampling_Frequency_Signal)
+        # Hochpassfilter 1 Hz:
+        bh, ah = scipy.signal.iirfilter(4, Wn=1, fs=self.sampling_Frequency_Signal, btype="high", ftype="butter")
+
+        self.heartrateFilter = LiveFilter(b, a)
+        self.SPO2Filter = LiveFilter(b, a)
+        self.AFFilter = LiveFilter(b, a)
+        self.ETCO2Filter = LiveFilter(b, a)
 
     def update_vector_length(self, value):  # TODO: relate to time displayed
         """When Slider is used, this functions changes the length of the Arrays, which hold the Serial Data.
@@ -372,7 +385,7 @@ class GUI_PLOTS(QObject):
                     self.AF_Data_new[self.datapoint] = 0
 
                 self.datapoint += 1  # set new datapoint
-                if not(self.AF_enabled and self.SPO2_enabled and self.ETCO2_enabled):
+                if not(self.AF_enabled and self.SPO2_enabled and self.ETCO2_enabled and self.Heartrate_enabled):
                     time.sleep(0.01)
 
             else:
